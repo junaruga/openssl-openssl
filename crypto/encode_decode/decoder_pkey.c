@@ -61,7 +61,7 @@ DEFINE_STACK_OF(EVP_KEYMGMT)
 struct decoder_pkey_data_st {
     OSSL_LIB_CTX *libctx;
     char *propq;
-    int selection;
+    int *selectionp;             /* A pointer of the selection */
 
     STACK_OF(EVP_KEYMGMT) *keymgmts;
     char *object_type;           /* recorded object data type, may be NULL */
@@ -155,11 +155,11 @@ static int decoder_construct_pkey(OSSL_DECODER_INSTANCE *decoder_inst,
 
             import_data.keymgmt = keymgmt;
             import_data.keydata = NULL;
-            if (data->selection == 0)
+            if (*(data->selectionp) == 0)
                 /* import/export functions do not tolerate 0 selection */
                 import_data.selection = OSSL_KEYMGMT_SELECT_ALL;
             else
-                import_data.selection = data->selection;
+                import_data.selection = *(data->selectionp);
 
             /*
              * No need to check for errors here, the value of
@@ -417,7 +417,7 @@ static int ossl_decoder_ctx_setup_for_pkey(OSSL_DECODER_CTX *ctx,
 
     process_data->object    = NULL;
     process_data->libctx    = libctx;
-    process_data->selection = ctx->selection;
+    process_data->selectionp = &(ctx->selection);
     process_data->keymgmts  = keymgmts;
 
     /*
@@ -561,7 +561,7 @@ ossl_decoder_ctx_for_pkey_dup(OSSL_DECODER_CTX *src,
 
         process_data_dest->object    = (void **)pkey;
         process_data_dest->libctx    = process_data_src->libctx;
-        process_data_dest->selection = process_data_src->selection;
+        process_data_dest->selectionp = process_data_src->selectionp;
         if (!OSSL_DECODER_CTX_set_construct_data(dest, process_data_dest)) {
             ERR_raise(ERR_LIB_OSSL_DECODER, ERR_R_OSSL_DECODER_LIB);
             goto err;
